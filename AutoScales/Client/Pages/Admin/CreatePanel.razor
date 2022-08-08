@@ -1,0 +1,63 @@
+﻿<div class="container mt-1" style="margin-bottom:2em;">
+    <h2 class="text-center" style="font-weight:bold;">Create New Transport</h2>
+    <EditForm Model="@TransportDto" OnValidSubmit="@CreateTransportAsync">
+        <div>
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+        </div>
+        <div class="row">
+            <div class="col-sm">
+                <div>
+                    <label class="form-label" style="font-weight:bold;"><i class="fa fa-solid fa-truck"></i>&nbsp;Car brand</label>
+                </div>
+                <div>
+                    <InputText class="form-control" @bind-Value="TransportDto.Name" id="createCararBrand"></InputText>
+                </div>
+                <div>
+                    <label class="form-label" style="font-weight:bold;"><i class="fa fa-solid fa-truck"></i>&nbsp;Car plate</label>
+                </div>
+                <div>
+                    <InputText class="form-control" @bind-Value="TransportDto.Number" id="createCarPlate"></InputText>
+                </div>
+                <div>
+                    <label class="form-label" style="font-weight:bold;"><i class="fa fa-solid fa-box"></i>&nbsp;Cargo</label>
+                </div>
+                <div>
+                    <InputText class="form-control" @bind-Value="TransportDto.Cargo" id="createCargo"></InputText>
+                </div>
+            </div>
+            <div class="col-sm">
+                <div>
+                    <label class="form-label" style="font-weight:bold;"><i class="fa fa-solid fa-dumbbell"></i>&nbsp;Axles' quantity</label>
+                </div>
+                <div>
+                    <InputNumber class="form-control" @bind-Value="TransportDto.AxisNumber" id="createAxles"></InputNumber>
+                </div>
+                <div>
+                    <label class="form-label" style="font-weight:bold;"><i class="fa fa-solid fa-weight-hanging"></i>&nbsp;Weight</label>
+                </div>
+                <div>
+                    <InputNumber class="form-control" @bind-Value="TransportDto.Weight" id="createWeight"></InputNumber>
+                </div>
+                
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm">
+                <div class="mt-2">
+                    <button class="btn btn-secondary" style="float:right;font-weight:bold;width:20%;margin-left:1em;" @onclick="() => Cancel()">Cancel</button>
+                    <button class="btn btn-success" type="submit" style="float:right;font-weight:bold;width:20%;">Create</button>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter]
+    public TransportDto TransportDto { get; set; }
+    [Parameter]
+    public Func<Task> CreateTransportAsync { get; set; }
+    [Parameter]
+    public Action Cancel { get; set; }
+}

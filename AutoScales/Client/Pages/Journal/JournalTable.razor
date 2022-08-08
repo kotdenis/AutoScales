@@ -1,0 +1,58 @@
+﻿<table class="table table-dark table-striped" id="journaltable">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Car brand</th>
+            <th>Car plate</th>
+            <th>Imported cargo</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Weight</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (JournalViews?.Count > 0)
+        {
+            int num = Number;
+            for (int i = 0; i < JournalViews.Count; i++)
+            {
+                num += 1;
+                <tr>
+                    <td>@num</td>
+                    <td>@JournalViews[i].Name</td>
+                    <td>@JournalViews[i].Number</td>
+                    <td>@JournalViews[i].Cargo</td>
+                    <td>@JournalViews[i].Date</td>
+                    <td>@JournalViews[i].Time</td>
+                    <td>@JournalViews[i].Weight</td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+<div>
+    <ul class="pagination">
+        @if (PagingHelper.Links != null)
+        {
+            @foreach (var link in PagingHelper.Links)
+            {
+                <li @onclick="async() => await PagingHelper.OnSelectedPage(link)" @onclick:preventDefault @onclick:stopPropagation
+            style="cursor: pointer;" class="page-item @(link.Enabled ? null : "disabled")
+                                    @(link.Active ? "active" : null)">
+                    <span class="page-link" href="#">@link.Text</span>
+                </li>
+            }
+        }
+    </ul>
+</div>
+
+@code {
+    [Parameter]
+    public List<JournalView> JournalViews { get; set; } = new List<JournalView>();
+    [Parameter]
+    public int Number { get; set; }
+    [Parameter]
+    public int Spread { get; set; }
+    [Parameter]
+    public PagingHelper<JournalView> PagingHelper { get; set; }
+}

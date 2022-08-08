@@ -1,0 +1,113 @@
+﻿@page "/admin/update"
+@layout WeighingLayout
+
+@inject TransportState _transportState
+@inject IWeighingService _weighingService
+@inject IJSRuntime _jsRuntime
+@inject NavigationManager _navigationManager
+
+<div class="container mt-2" style="margin-bottom:2em;">
+    <h1 class="text-center" style="font-weight:bold;">Update Transport</h1>
+    <div class="row">
+        <div class="col-sm-2"></div>
+        <div class="col-sm">
+            <EditForm Model="@TransportDto" OnValidSubmit="@UpdateTransportAsync">
+                <div class="row">
+                    <div class="col-sm">
+                        <div>
+                            <label class="form-label" style="font-weight:bold;"><i class="fa fa-solid fa-truck"></i>&nbsp;Car brand</label>
+                        </div>
+                        <div>
+                            <InputText class="form-control" @bind-Value="TransportDto.Name" id="createCararBrand"></InputText>
+                        </div>
+                        <div>
+                            <label class="form-label" style="font-weight:bold;"><i class="fa fa-solid fa-truck"></i>&nbsp;Car plate</label>
+                        </div>
+                        <div>
+                            <InputText class="form-control" @bind-Value="TransportDto.Number" id="createCarPlate"></InputText>
+                        </div>
+                        <div>
+                            <label class="form-label" style="font-weight:bold;"><i class="fa fa-solid fa-box"></i>&nbsp;Cargo</label>
+                        </div>
+                        <div>
+                            <InputText class="form-control" @bind-Value="TransportDto.Cargo" id="createCargo"></InputText>
+                        </div>
+                    </div>
+                    <div class="col-sm">
+                        <div>
+                            <label class="form-label" style="font-weight:bold;"><i class="fa fa-solid fa-dumbbell"></i>&nbsp;Axles' quantity</label>
+                        </div>
+                        <div>
+                            <InputNumber class="form-control" @bind-Value="TransportDto.AxisNumber" id="createAxles"></InputNumber>
+                        </div>
+                        <div>
+                            <label class="form-label" style="font-weight:bold;"><i class="fa fa-solid fa-weight-hanging"></i>&nbsp;Weight</label>
+                        </div>
+                        <div>
+                            <InputNumber class="form-control" @bind-Value="TransportDto.Weight" id="createWeight"></InputNumber>
+                        </div>
+                        
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm mt-4">
+                        <div>
+                            <button class="btn btn-secondary" style="float:right;font-weight:bold;width:20%;margin-left:1em;" 
+                            @onclick="() => Cancel()">Cancel</button>
+                            <button class="btn btn-success" type="submit" style="float:right;font-weight:bold;width:20%;">Update</button>
+                        </div>
+                    </div>
+                </div>
+            </EditForm>
+        </div>
+        <div class="col-sm-2"></div>
+    </div>
+</div>
+<ModalDelUpdate ButtonClass="@_class" CloseModal="@CloseModalUpdateAsync" Message="@_message" IsDeleted="@false"></ModalDelUpdate>
+<ModalError CloseModal="@CloseErrorAsync" Message="@_message"></ModalError>
+
+@code {
+    private TransportDto TransportDto { get; set; } = new();
+    private IJSObjectReference? module;
+    private string _message = "";
+    private string _class = "";
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        module = await _jsRuntime.InvokeAsync<IJSObjectReference>("import", "./js/appScript.js");
+        TransportDto = _transportState.TransportDto;
+        StateHasChanged();
+    }
+
+    private async Task UpdateTransportAsync(){
+        var updated = await _weighingService.UpdateTransportAsync(TransportDto);
+        if(updated){
+            _class = "btn btn-success";
+            _message = "Updated!";
+            await module.InvokeVoidAsync("showDelUpdate");
+        }
+        else{
+            _message = "Something went wrong!";
+            await module.InvokeVoidAsync("showError");
+        }
+    }
+
+    private void Cancel(){
+        _navigationManager.NavigateTo("/admin/main");
+    }
+
+    private async Task CloseModalUpdateAsync()
+    {
+        if (module != null){
+            await module.InvokeVoidAsync("closeDelUpdate");
+        }
+        _navigationManager.NavigateTo("/admin/main");
+    }
+
+    private async Task CloseErrorAsync()
+    {
+        if (module != null)
+            await module.InvokeVoidAsync("closeError");
+    }
+}

@@ -1,0 +1,23 @@
+﻿<div class="modal" tabindex="-1" id="modalSuccess">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" style="font-family:Arial, Helvetica, sans-serif;font-weight: bold;">Info</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть" @onclick="async _ => await CloseModal()"></button>
+            </div>
+            <div class="modal-body">
+                <p style="font-family:Arial, Helvetica, sans-serif;font-weight: bold;">@Message</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" data-bs-dismiss="modal" @onclick="async _ => await CloseModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Func<Task> CloseModal { get; set; }
+    [Parameter]
+    public string Message { get; set; } = string.Empty;
+}

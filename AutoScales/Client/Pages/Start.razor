@@ -1,0 +1,22 @@
+﻿@page "/"
+@layout MainLayout
+
+<div class="container text-center">
+    <div class="row">
+        <div class="col-sm" id="colImage" >
+            <img class="mt-2" src="@imageSource" alt="" width="600" height="500" />
+        </div>
+        <div class="col-sm" id="colStart">
+            <h1 class="text-center mt-3" style="font-weight:bold;">Cargo Control.</h1>
+            <p style="text-align:justify; font-weight:bold;">This application is designed to simulate the operation of a truck weight control system. 
+                Simulation of arrival on the scales, measuring the load on the axle of the car, logging and administration of records.</p>
+        </div>
+    </div>
+</div>
+<style>
+    
+</style>
+
+@code {
+    private string? imageSource = "https://denistransportscales.ru/pngwing.com.png";
+}

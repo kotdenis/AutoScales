@@ -1,0 +1,64 @@
+﻿@page "/journal/main"
+@layout WeighingLayout 
+
+@inject JournalState _journalState
+@inject IJournalService _journalService
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize]
+
+<div class="container">
+    <h1 class="text-center" style="font-weight:bold;">Weighing journal</h1>
+    <div class="row">
+        <div class="col-sm">
+            <JournalTable JournalViews="@_journalState.JournalViews" Number="@_pagingHelper.Number" PagingHelper="@_pagingHelper" 
+             Spread="@_spread"></JournalTable>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm">
+            <SearchPanel SearchAsync="@SearchAsync" SearchModel="@SearchModel"></SearchPanel>
+        </div>
+    </div>
+</div>
+
+@code {
+    
+    private SearchModel SearchModel { get; set; } = new();
+    private PagingHelper<JournalView>? _pagingHelper;
+    private int _spread = 2;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pagingHelper = new PagingHelper<JournalView>(_journalState.JournalViews, _spread, 12,
+        () => GetJournalAsync(), () => StateHasChanged());
+        await GetJournalAsync();
+        StateHasChanged();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _pagingHelper?.CreatePaginationLinks();
+        await Task.CompletedTask;
+    }
+
+    private async Task GetJournalAsync(){
+        var response = await _journalService.GetPagedJournalAsync(_pagingHelper.Parameters);
+        if(response != null){
+            _journalState.JournalViews = response.Items;
+            _pagingHelper.MetaDatas = response.MetaData;
+            _pagingHelper.List = _journalState.JournalViews;
+        }
+    }
+
+    private async Task SearchAsync(){
+        var response = await _journalService.GetPagedJournalBySearchAsync(SearchModel, _pagingHelper.Parameters);
+        if (response != null)
+        {
+            _journalState.JournalViews = response.Items;
+            _pagingHelper.MetaDatas = response.MetaData;
+            _pagingHelper.List = _journalState.JournalViews;
+        }
+        StateHasChanged();
+    }
+}

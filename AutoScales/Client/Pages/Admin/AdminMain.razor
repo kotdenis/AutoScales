@@ -1,0 +1,131 @@
+﻿@page "/admin/main"
+@layout WeighingLayout
+
+@inject IWeighingService _weighingService
+@inject TransportState _transportState
+@inject IJSRuntime _jsRuntime
+@inject NavigationManager _navigationManager
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Roles = RoleConstants.Admin)]
+
+<div class="container">
+    <h1 class="text-center" style="font-weight:bold;">Admin panel</h1>
+    <div class="row mt-2">
+        <div class="col-sm">
+            <AdminJournal Number="@_pagingHelper.Number" PagingHelper="@_pagingHelper" Spread="@_spread" TransportDtos="_pagingHelper.List"
+             Update="@UpdateTransport" DeleteAsync="ShowDelModal"></AdminJournal>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-3"></div>
+        <div class="col-sm-9">
+            <CreatePanel TransportDto="@TransportDto" CreateTransportAsync="@CreateTransportAsync" Cancel="@CancelCreate"></CreatePanel>
+        </div>
+    </div>
+</div>
+<ModalSuccess CloseModal="@CloseModalAsync" Message="@_message"></ModalSuccess>
+<ModalError CloseModal="@CloseErrorAsync" Message="@_message"></ModalError>
+<ModalDelUpdate ButtonClass="btn btn-secondary" CloseModal="@CloseModalDeleteAsync" DeleteAsync="@DeleteAsync" IsDeleted="@true"
+     Message="Are you shure?"></ModalDelUpdate>
+
+@code {
+    private int _spread = 2;
+    private string _message = "";
+    private PagingHelper<TransportDto>? _pagingHelper;
+
+    private TransportDto TransportDto { get; set; } = new ();
+    private IJSObjectReference? module;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pagingHelper = new PagingHelper<TransportDto>(_transportState.TransportDtos, _spread, 5,
+            () => GetTransportsAsync(), () => StateHasChanged());
+        await GetTransportsAsync();
+        StateHasChanged();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        module = await _jsRuntime.InvokeAsync<IJSObjectReference>("import", "./js/appScript.js");
+        _pagingHelper?.CreatePaginationLinks();
+        StateHasChanged();
+    }
+
+    private async Task GetTransportsAsync(){
+        var response = await _weighingService.GetTransportsForAdminAsync(_pagingHelper.Parameters);
+        if(response != null){
+            _transportState.TransportDtos = response.Items;
+            _pagingHelper.MetaDatas = response.MetaData;
+            _pagingHelper.List = _transportState.TransportDtos;
+        }
+    }
+
+    private async Task CreateTransportAsync(){
+        var result = await _weighingService.CreateTransportAsync(TransportDto);
+        if (result){
+            TransportDto = new TransportDto();
+            if(module != null){
+                _message = "Successfully created!";
+                await module.InvokeVoidAsync("showSuccess");
+            }
+            await GetTransportsAsync();
+        }
+        else{
+            TransportDto = new TransportDto();
+            if (module != null)
+            {
+                _message = "Something went wrong!";
+                await module.InvokeVoidAsync("showError");
+            }
+        }
+
+    }
+
+    private void CancelCreate(){
+        TransportDto = new TransportDto();
+        StateHasChanged();
+    }
+
+    private void UpdateTransport(TransportDto transportDto){
+        _transportState.TransportDto = transportDto;
+        _navigationManager.NavigateTo("/admin/update");
+    }
+
+    private async Task DeleteAsync(){
+        var deleted = await _weighingService.DeleteSoftAsync(TransportDto);
+        await CloseModalDeleteAsync();
+        if(deleted){
+            _message = "Successfully deleted!";
+            await module.InvokeVoidAsync("showSuccess");
+            await GetTransportsAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task ShowDelModal(TransportDto transportDto){
+        TransportDto = transportDto;
+        if (module != null)
+            await module.InvokeVoidAsync("showDelUpdate");
+    }
+
+    private async Task CloseModalAsync(){
+        if (module != null)
+            await module.InvokeVoidAsync("closeSuccess");
+    }
+
+    private async Task CloseErrorAsync()
+    {
+        if (module != null)
+            await module.InvokeVoidAsync("closeError");
+    }
+
+    private async Task CloseModalDeleteAsync()
+    {
+        if (module != null)
+        {
+            await module.InvokeVoidAsync("closeDelUpdate");
+        }
+    }
+}

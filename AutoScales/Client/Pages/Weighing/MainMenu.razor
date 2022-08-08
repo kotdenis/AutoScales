@@ -1,0 +1,175 @@
+﻿@page "/weighing/mainmenu"
+@layout WeighingLayout 
+
+@inject IWeighingService _weighingService
+@inject IJSRuntime _jsRuntime
+
+@using System.Drawing
+@using ChartJs.Blazor.BarChart
+@using ChartJs.Blazor.Common
+@using ChartJs.Blazor.Util
+
+@inject ChartState _chartState
+@inject TransportState _transportState
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize]
+
+<div class="container">
+    <h1 class="text-center" style="font-weight:bold;">Weighing panel</h1>
+    <div class="row mt-2">
+        <div class="col-sm-7">
+            <div class="row">
+                <div class="col-sm">
+                    <WeighingControl CurrentWeight="@_currentWeight" GetTransport="@GetTransportAsync" 
+                         TransportView="@TransportView" BeginWeighing="@BeginWeighingAsync" SaveWeighing="@SaveWeighing"></WeighingControl>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm" >
+                    <div style="height:300px;margin-bottom:2em;">
+                        @if (_chartState.TransportBarConfig != null)
+                        {
+                            <Chart Config="_chartState.TransportBarConfig" @ref="_chartState.TransportChart"/>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <ForDayTable ForDayModels="@_transportState.ForDayModels" Number="@_pagingHelper.Number" PagingHelper="@_pagingHelper" Spread="@_spread"></ForDayTable>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    private TransportView TransportView { get; set; } = new();
+    private int _spread = 2;
+    private int _currentWeight;
+    private double[] _axisArray;
+    private string[] _labelsArray;
+
+    private PagingHelper<ForDayModel>? _pagingHelper;
+
+    private IJSObjectReference? module;
+
+    protected async override Task OnInitializedAsync()
+    {
+        _pagingHelper = new PagingHelper<ForDayModel>(_transportState.ForDayModels, _spread, 12,
+        () => GetForDayModelsAsync(), () => StateHasChanged());
+        _chartState = new ChartState();
+        await GetForDayModelsAsync();
+        StateHasChanged();
+        await Task.CompletedTask;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _pagingHelper?.CreatePaginationLinks();
+        module = await _jsRuntime.InvokeAsync<IJSObjectReference>("import", "./js/appScript.js");
+        await module.InvokeVoidAsync("initialDisabled");
+    }
+
+    private async Task GetForDayModelsAsync(){
+        var paginResponse = await _weighingService.GetPagedForDayAsync(_pagingHelper.Parameters);
+        _transportState.ForDayModels = paginResponse.Items;
+        _pagingHelper.MetaDatas = paginResponse.MetaData;
+        _pagingHelper.List = _transportState.ForDayModels;
+    }
+
+    private async Task GetTransportAsync(){
+        TransportView = await _weighingService.GetRandomTransportAsync();
+        await module.InvokeVoidAsync("afterAccept");
+        StateHasChanged();
+    }
+
+    private async Task BeginWeighingAsync(){
+        if(_currentWeight == 0 && !string.IsNullOrEmpty(TransportView.Name)){
+            _axisArray = new double[TransportView.AxisNumber];
+            _labelsArray = new string[TransportView.AxisNumber];
+            for(int i = 0; i < 10; i++){
+                _currentWeight += TransportView.Weight / 10;
+                StateHasChanged();
+                await Task.Delay(1000);
+            }
+            var axleLoads = Math.Round((double)(TransportView.Weight / TransportView.AxisNumber), 2);
+            for (int i = 0; i < TransportView.AxisNumber; i++)
+            {
+                if (i == 0)
+                {
+                    _axisArray[i] = axleLoads - 500;
+                    _labelsArray[i] = _axisArray[i].ToString();
+                }
+                if (i == 1)
+                {
+                    _axisArray[i] = axleLoads + 500;
+                    _labelsArray[i] = _axisArray[i].ToString();
+                }
+                if (i > 1)
+                {
+                    _axisArray[i] = axleLoads;
+                    _labelsArray[i] = _axisArray[i].ToString();
+                }
+            }
+            await module.InvokeVoidAsync("endWeighing");
+            await ShowChartAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task ShowChartAsync()
+    {
+        IDataset<double> dataset = new BarDataset<double>(_axisArray)
+            {
+                Label = "Axle's loads",
+                BackgroundColor = ColorUtil.FromDrawingColor(Color.FromArgb(120, 255, 0, 0))
+
+            };
+
+        if (_chartState.TransportBarConfig.Data.Labels.Count > 0)
+            _chartState.TransportBarConfig.Data.Labels.Clear();
+
+        foreach (var item in _labelsArray)
+        {
+            _chartState.TransportBarConfig.Data.Labels.Add(item);
+        }
+
+        if (_chartState.TransportBarConfig.Data.Datasets.Count > 0)
+            _chartState.TransportBarConfig.Data.Datasets.Clear();
+
+        _chartState.TransportBarConfig.Data.Datasets.Add(dataset);
+
+        if (_chartState.TransportChart != null)
+            await _chartState.TransportChart.Update();
+        await Task.CompletedTask;
+    }
+
+    public async Task SaveWeighing(){
+        if (_currentWeight > 0) {
+            var journalView = new JournalView
+                {
+                    Cargo = TransportView.Cargo,
+                    Date = DateTime.Now.ToShortDateString(),
+                    Name = TransportView.Name,
+                    WeighinDate = DateTime.Now,
+                    Number = TransportView.Number,
+                    Time = DateTime.Now.ToShortTimeString(),
+                    Weight = TransportView.Weight
+                };
+            var isSaved = await _weighingService.SaveWeighingAsync(journalView);
+            if (isSaved) {
+                if (_chartState.TransportBarConfig.Data.Datasets.Count > 0)
+                    _chartState.TransportBarConfig.Data.Datasets.Clear();
+                if (_chartState.TransportBarConfig.Data.Labels.Count > 0)
+                    _chartState.TransportBarConfig.Data.Labels.Clear();
+                await module.InvokeVoidAsync("saveWeighing");
+                TransportView = new TransportView();
+                _currentWeight = 0;
+                await GetForDayModelsAsync();
+                StateHasChanged();
+            }
+
+        }
+    }
+}

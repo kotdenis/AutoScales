@@ -1,0 +1,93 @@
+﻿@inherits LayoutComponentBase
+@inject NavigationManager _navigationManager
+@inject CustomStateProvider _authProvider
+@inject IJSRuntime _jsRuntime
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize]
+<div id="divContainer">
+    <nav class="navbar navbar-expand-lg bg-dark">
+        <div class="container-fluid">
+
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="btn btn-outline-success" href="/weighing/mainmenu" style="margin-left:2em;">Weighing</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-outline-success" href="/journal/main" style="margin-left:1em;">Journal</a>
+                    </li>
+                    @if(IsAdmin){
+                        <li class="nav-item">
+                            <a class="btn btn-outline-success" href="/admin/main" style="margin-left:1em;">Administration</a>
+                        </li>
+                    }
+                </ul>
+                <form class="d-flex" role="search">
+                    <button class="btn btn-outline-success" type="submit" @onclick="async() => await LogoutAsync()"
+                            @onclick:preventDefault @onclick:stopPropagation>
+                        Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+    <div class="container mt-2" id="divWrapper">
+        @Body
+    </div>
+    <footer>
+        <h1 id="footerNote">Made to simulate transport's weighing.</h1>
+    </footer>
+</div>
+<style>
+    #divContainer {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+
+    footer {
+        flex-shrink: 0;
+        height: 150px;
+        background-color: black;
+        text-align: center;
+        margin-top: 3em;
+        vertical-align: central;
+    }
+
+    #divWrapper {
+        flex-grow: 1;
+    }
+
+    #footerNote {
+        position: relative;
+        top: 40%;
+        color: lightgray;
+        margin: auto;
+    }
+</style>
+
+
+@code {
+    [CascadingParameter]
+    Task<AuthenticationState> AuthenticationState { get; set; }
+
+    private bool IsAdmin { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var roles = (await AuthenticationState).User.Claims.ToList();
+        if(roles.Any(x => x.Value == RoleConstants.Admin)){
+            IsAdmin = true;
+        }
+    }
+
+    private async Task LogoutAsync(){
+        if ((await AuthenticationState).User.Identity.IsAuthenticated){
+            var isOut = await _authProvider.LogoutAsync();
+            if(isOut){
+                _navigationManager.NavigateTo("/");
+            }
+        }
+    }
+}

@@ -1,0 +1,56 @@
+﻿@page "/login"
+@layout MainLayout
+
+@inject CustomStateProvider _authProvider
+@inject NavigationManager _navigationManager
+
+<div class="container mt-2">
+    <div class="row">
+        <div class="col-sm"></div>
+        <div class="col-sm">
+            <h1 class="text-center"style="font-weight:bold;">Sign In</h1>
+            <EditForm Model="@loginModel" OnValidSubmit="@Confirm">
+                <div>
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                </div>
+                <div>
+                    <label class="form-label" style="font-weight:bold;"><i class="fa fa-solid fa-at"></i>&nbsp;Email</label>
+                </div>
+                <div>
+                    <InputText class="form-control" @bind-Value="loginModel.Email"></InputText>
+                </div>
+                <div>
+                    <label class="form-label" style="font-weight:bold;"><i class="fa fa-solid fa-lock"></i>&nbsp;Password</label>
+                </div>
+                <div>
+                    <InputText class="form-control" type="password" @bind-Value="loginModel.Password"></InputText>
+                </div>
+                <div class="mt-3" >
+                    <button class="btn btn-success" type="submit" style="float:right">Confirm</button>
+                </div>
+            </EditForm>
+        </div>
+        <div class="col-sm"></div>
+    </div>
+    <div class="row">
+        <div class="col-sm"></div>
+        <div class="col-sm">
+            <div class="mt-3" style="float:right">
+                <p>Don't have account?&nbsp;<span><a href="/register" style="font-weight:bold;">sign up</a></span></p>
+            </div>
+        </div>
+        <div class="col-sm"></div>
+    </div>
+</div>
+
+@code {
+    private LoginModel loginModel { get; set; } = new LoginModel();
+
+    private async Task Confirm()
+    {
+        var isLogged = await _authProvider.LoginAsync(loginModel);
+        if (isLogged)
+            _navigationManager.NavigateTo("/weighing/mainmenu");
+    }
+}

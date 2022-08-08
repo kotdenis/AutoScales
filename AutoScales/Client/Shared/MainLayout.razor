@@ -1,0 +1,86 @@
+﻿@inherits LayoutComponentBase
+@inject NavigationManager navigationManager
+
+<div id="divContainer">
+    <div >
+        <nav class="navbar bg-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/"><h1 style="color:white;font-weight:bold;" id="brand">Cargo Control</h1></a>
+                <form class="d-flex" role="search">
+                    <button class="btn btn-outline-success" id="buttonSignin" @onclick="(e) => ToLogin(e)" @onclick:preventDefault @onclick:stopPropagation>Sign in</button>
+                    <button class="btn btn-outline-success" @onclick="(e) => ToRegister(e)" @onclick:preventDefault @onclick:stopPropagation>Sign up</button>
+                </form>
+            </div>
+        </nav>
+    </div>
+    <div class="container mt-2" id="divWrapper">
+        @Body
+    </div>
+    <footer>
+        <h1 id="footerNote">Made to simulate transport's weighing.</h1>
+    </footer>
+</div>
+
+<style>
+    #divContainer {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+
+    footer {
+        flex-shrink: 0;
+        height:150px;
+        background-color:black;
+        text-align:center;
+        margin-top:3em;
+        vertical-align:central;
+    }
+
+    #divWrapper {
+        flex-grow: 1;
+    }
+
+    #footerNote {
+        position:relative;
+        top:40%;
+        color: lightgray;
+        margin: auto;
+    }
+</style>
+<style>
+    nav{
+        height:120px;
+        width:100%;
+    }
+
+    #buttonSignin{
+        margin-right:1em;
+    }
+
+    #brand:hover {
+        color:lightslategray;
+    }
+</style>
+
+@code {
+
+    [CascadingParameter]
+    Task<AuthenticationState> AuthenticationState { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if ((await AuthenticationState).User.Identity.IsAuthenticated){
+            navigationManager.NavigateTo("/weighing/mainmenu");
+        }
+    }
+
+    private void ToRegister(MouseEventArgs e)
+    {
+        navigationManager.NavigateTo("/register");
+    }
+
+    private void ToLogin(MouseEventArgs e){
+        navigationManager.NavigateTo("/login");
+    }
+}
